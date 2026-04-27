@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { getSession, saveSession, clearSession, BotSession } from './state';
 import { generateContent } from '../services/ai';
+import { queuePostJobs } from '../services/publish';
 import prisma from '../db/client';
 
 const token = process.env.TELEGRAM_BOT_TOKEN || 'test_token';
@@ -189,8 +190,22 @@ bot.on('callback_query', async (query) => {
       await saveSession(chatId, session);
       bot.sendMessage(chatId, "Tell me the idea or core message — keep it brief.");
     } else if (action === 'yes') {
-      bot.sendMessage(chatId, "Jobs queued! You'll be notified when published.");
-      // TODO: Queue BullMQ Jobs here
+      try {
+        await queuePostJobs(
+          {
+            userId: session.userId,
+            idea: session.idea,
+            postType: session.postType,
+            tone: session.tone,
+            model: session.model
+          },
+          session.generatedContent
+        );
+        bot.sendMessage(chatId, "Jobs queued! You'll be notified when published.");
+      } catch (err) {
+        console.error(err);
+        bot.sendMessage(chatId, "Failed to queue jobs.");
+      }
       await clearSession(chatId);
     }
   }

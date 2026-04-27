@@ -6,6 +6,8 @@ import authRoutes from './routes/auth';
 
 import contentRoutes from './routes/content';
 import botRoutes from './routes/bot';
+import postsRoutes from './routes/posts';
+import dashboardRoutes from './routes/dashboard';
 
 dotenv.config();
 
@@ -17,6 +19,8 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/posts', postsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/bot', botRoutes);
 
 // Error handling middleware
