@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { publish, schedule, getPosts, getPost, retryPost, deletePost } from '../controllers/posts';
+import { publish, schedule, getPosts, getPost, retryPost, deletePost, restorePost } from '../controllers/posts';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
@@ -12,5 +12,6 @@ router.get('/', getPosts);
 router.get('/:id', getPost);
 router.post('/:id/retry', retryPost);
 router.delete('/:id', deletePost);
+router.post('/:id/restore', restorePost);
 
 export default router;

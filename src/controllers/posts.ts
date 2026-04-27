@@ -77,7 +77,7 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response): Promis
     const from = req.query.from as string;
     const to = req.query.to as string;
 
-    const where: any = { userId };
+    const where: any = { userId, deletedAt: null };
     if (status) where.status = status;
     if (platform) {
       where.platformPosts = { some: { platform } };
@@ -184,7 +184,7 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
     const id = req.params.id as string;
 
     const post = await prisma.post.findFirst({
-      where: { id, userId },
+      where: { id, userId, deletedAt: null },
       include: { platformPosts: true }
     });
 
@@ -193,23 +193,50 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    if (post.status === 'published' || post.status === 'processing') {
-      res.status(400).json({ error: { code: 'CANNOT_CANCEL', message: 'Post is already processing or published' } });
-      return;
+    if (post.status === 'queued') {
+      await prisma.platformPost.updateMany({
+        where: { postId: id, status: 'queued' },
+        data: { status: 'cancelled' }
+      });
+      
+      await prisma.post.update({
+        where: { id },
+        data: { status: 'cancelled', deletedAt: new Date() }
+      });
+    } else {
+      await prisma.post.update({
+        where: { id },
+        data: { deletedAt: new Date() }
+      });
     }
-
-    await prisma.platformPost.updateMany({
-      where: { postId: id, status: 'queued' },
-      data: { status: 'cancelled' }
-    });
-    
-    await prisma.post.update({
-      where: { id },
-      data: { status: 'cancelled' }
-    });
 
     res.status(200).json({ data: { success: true }, error: null });
   } catch (error: any) {
     res.status(500).json({ error: { code: 'DELETE_ERROR', message: error.message } });
+  }
+};
+
+export const restorePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const post = await prisma.post.findFirst({
+      where: { id, userId }
+    });
+
+    if (!post || !post.deletedAt) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Post not found or not deleted' } });
+      return;
+    }
+
+    await prisma.post.update({
+      where: { id },
+      data: { deletedAt: null }
+    });
+
+    res.status(200).json({ data: { success: true }, error: null });
+  } catch (error: any) {
+    res.status(500).json({ error: { code: 'RESTORE_ERROR', message: error.message } });
   }
 };

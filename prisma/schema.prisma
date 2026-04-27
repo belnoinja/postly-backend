@@ -57,6 +57,7 @@ model Post {
   modelUsed      String         // openai | anthropic
   status         String         @default("queued") // queued | processing | published | partial | failed | cancelled
   publishAt      DateTime?
+  deletedAt      DateTime?
   createdAt      DateTime       @default(now())
 
   user           User           @relation(fields: [userId], references: [id])
