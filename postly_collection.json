@@ -1,0 +1,25 @@
+{
+  "info": {
+    "name": "Postly API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Register", "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/register" } },
+        { "name": "Login", "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/login" } }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        { "name": "Publish", "request": { "method": "POST", "url": "{{baseUrl}}/api/posts/publish" } },
+        { "name": "Get Posts", "request": { "method": "GET", "url": "{{baseUrl}}/api/posts" } }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ]
+}
