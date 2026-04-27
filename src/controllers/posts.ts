@@ -3,11 +3,21 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import prisma from '../db/client';
 import { generateContent } from '../services/ai';
 import { queuePostJobs, publishingQueue } from '../services/publish';
+import LanguageDetect from 'languagedetect';
+
+const lngDetector = new LanguageDetect();
+
+function detectLanguage(text: string): string {
+  const result = lngDetector.detect(text, 1);
+  return result.length > 0 ? result[0][0] : 'english';
+}
 
 export const publish = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { idea, post_type, platforms, tone, language, model } = req.body;
+    let { idea, post_type, platforms, tone, language, model } = req.body;
     const userId = req.user!.userId;
+
+    if (!language) language = detectLanguage(idea);
 
     const result = await generateContent({
       userId,
@@ -36,8 +46,10 @@ export const publish = async (req: AuthenticatedRequest, res: Response): Promise
 
 export const schedule = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { idea, post_type, platforms, tone, language, model, publish_at } = req.body;
+    let { idea, post_type, platforms, tone, language, model, publish_at } = req.body;
     const userId = req.user!.userId;
+
+    if (!language) language = detectLanguage(idea);
 
     const result = await generateContent({
       userId,
@@ -238,5 +250,42 @@ export const restorePost = async (req: AuthenticatedRequest, res: Response): Pro
     res.status(200).json({ data: { success: true }, error: null });
   } catch (error: any) {
     res.status(500).json({ error: { code: 'RESTORE_ERROR', message: error.message } });
+  }
+};
+
+export const getAnalytics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const id = req.params.id as string;
+
+    const post = await prisma.post.findFirst({
+      where: { id, userId },
+      include: { platformPosts: true }
+    });
+
+    if (!post) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Post not found' } });
+      return;
+    }
+
+    const analytics: Record<string, any> = {};
+
+    post.platformPosts.forEach(p => {
+      if (p.status === 'published') {
+        // Mock analytics data
+        analytics[p.platform] = {
+          likes: Math.floor(Math.random() * 500),
+          shares: Math.floor(Math.random() * 100),
+          impressions: Math.floor(Math.random() * 5000),
+          clicks: Math.floor(Math.random() * 300)
+        };
+      } else {
+        analytics[p.platform] = { status: p.status, message: 'Analytics not available for unpublished posts' };
+      }
+    });
+
+    res.status(200).json({ data: analytics, error: null });
+  } catch (error: any) {
+    res.status(500).json({ error: { code: 'ANALYTICS_ERROR', message: error.message } });
   }
 };

@@ -9,6 +9,7 @@ import botRoutes from './routes/bot';
 import postsRoutes from './routes/posts';
 import dashboardRoutes from './routes/dashboard';
 import rateLimit from 'express-rate-limit';
+import { startCronJobs } from './cron';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    startCronJobs();
   });
 }
 
