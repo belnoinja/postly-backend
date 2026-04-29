@@ -8,6 +8,7 @@ import contentRoutes from './routes/content';
 import botRoutes from './routes/bot';
 import postsRoutes from './routes/posts';
 import dashboardRoutes from './routes/dashboard';
+import oauthRoutes from './routes/oauth';
 import rateLimit from 'express-rate-limit';
 import { startCronJobs } from './cron';
 
@@ -24,9 +25,11 @@ const limiter = rateLimit({
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(limiter);
 
 app.use('/api/auth', authRoutes);
+app.use('/api/oauth', oauthRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
